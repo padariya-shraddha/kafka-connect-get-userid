@@ -171,8 +171,3 @@ public abstract class ExtractUserid<R extends ConnectRecord<R>> implements Trans
 }
 
 
-
-
-// public class ExtractUserid { }
-
-
