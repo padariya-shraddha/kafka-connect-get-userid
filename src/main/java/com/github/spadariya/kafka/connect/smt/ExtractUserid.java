@@ -17,6 +17,8 @@ import org.apache.kafka.connect.transforms.util.SimpleConfig;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static org.apache.kafka.connect.transforms.util.Requirements.requireMap;
 import static org.apache.kafka.connect.transforms.util.Requirements.requireStruct;
@@ -103,14 +105,19 @@ public abstract class ExtractUserid<R extends ConnectRecord<R>> implements Trans
         schemaUpdateCache = null;
     }
 
-    private String getRandomUuid() {
-        return UUID.randomUUID().toString();
-    }
-
     private long getUserid(Object message) {
         String messageValue = String.valueOf(message);
-        //get userid from message
-        return 123l;
+
+        //get first number from string
+        Pattern regexPattern = Pattern.compile("^\\{user:(\\d+)\\}.realtime$");
+        Matcher matcher = regexPattern.matcher(messageValue);
+
+        Long user_id = 111l;
+        if(matcher.find()) {
+            user_id = Long.parseLong(matcher.group(1));
+        }
+
+        return user_id;
     }
 
     private Schema makeUpdatedSchema(Schema schema) {
@@ -121,7 +128,6 @@ public abstract class ExtractUserid<R extends ConnectRecord<R>> implements Trans
         }
 
         builder.field(extractTofieldName, Schema.INT64_SCHEMA);
-
         return builder.build();
     }
 
