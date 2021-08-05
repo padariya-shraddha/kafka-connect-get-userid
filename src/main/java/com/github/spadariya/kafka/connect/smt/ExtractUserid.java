@@ -16,9 +16,11 @@ import org.apache.kafka.connect.transforms.util.SimpleConfig;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.apache.kafka.connect.transforms.util.Requirements.requireMap;
 import static org.apache.kafka.connect.transforms.util.Requirements.requireStruct;
@@ -27,22 +29,27 @@ public abstract class ExtractUserid<R extends ConnectRecord<R>> implements Trans
 
     public static final String OVERVIEW_DOC =
             "Insert a random UUID into a connect record";
+    private static final Logger logger = LoggerFactory.getLogger(ExtractUserid.class);
 
     private interface ConfigName {
         String EXTRACT_FROM = "extract.from.field";
         String EXTRACT_TO = "extract.to.field";
+        String EXTRACT_REGEX = "extract.regex.pattern";
     }
 
     public static final ConfigDef CONFIG_DEF = new ConfigDef()
             .define(ConfigName.EXTRACT_FROM, ConfigDef.Type.STRING, "message", ConfigDef.Importance.HIGH,
                     "Extract user id from this field")
             .define(ConfigName.EXTRACT_TO, ConfigDef.Type.STRING, "user_id", ConfigDef.Importance.HIGH,
-                    "Extract user id to this field");
+                    "Extract user id to this field")
+            .define(ConfigName.EXTRACT_REGEX, ConfigDef.Type.STRING, "no_pattern_given", ConfigDef.Importance.HIGH,
+                    "Extract numeric vause using this regex");
 
-    private static final String PURPOSE = "Extracting user id from record";
+    private static final String PURPOSE = "Extract first numeric value from string";
 
     private String extractFromfieldName;
     private String extractTofieldName;
+    private String extractRegexPattern;
 
     private Cache<Schema, Schema> schemaUpdateCache;
 
@@ -51,6 +58,12 @@ public abstract class ExtractUserid<R extends ConnectRecord<R>> implements Trans
         final SimpleConfig config = new SimpleConfig(CONFIG_DEF, props);
         extractFromfieldName = config.getString(ConfigName.EXTRACT_FROM);
         extractTofieldName = config.getString(ConfigName.EXTRACT_TO);
+        extractRegexPattern = config.getString(ConfigName.EXTRACT_REGEX);
+
+        logger.info("------------- Configure Parameters -------------");
+        logger.info("extractFromfieldName : "+extractFromfieldName);
+        logger.info("extractTofieldName : "+extractTofieldName);
+        logger.info("extractRegexPattern : "+extractRegexPattern);
 
         schemaUpdateCache = new SynchronizedCache<>(new LRUCache<Schema, Schema>(16));
     }
@@ -109,10 +122,10 @@ public abstract class ExtractUserid<R extends ConnectRecord<R>> implements Trans
         String messageValue = String.valueOf(message);
 
         //get first number from string
-        Pattern regexPattern = Pattern.compile("^\\{user:(\\d+)\\}.realtime$");
+        Pattern regexPattern = Pattern.compile(extractRegexPattern);
         Matcher matcher = regexPattern.matcher(messageValue);
 
-        Long user_id = 111l;
+        Long user_id = 130l;
         if(matcher.find()) {
             user_id = Long.parseLong(matcher.group(1));
         }
